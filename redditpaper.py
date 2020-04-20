@@ -96,8 +96,8 @@ if __name__ == "__main__":
         scraped.append(wall.id)
         count += 1
         save_image(wall.url, filename)
-        # only save five wallpapers per run:
-        if count == 5:
+        # only save specificed (default 5) wallpapers per run:
+        if count >= config['REDDITPAPER_MAXSAVE']:
             break
 
     save_scraped(scraped)
