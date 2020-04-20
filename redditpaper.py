@@ -1,10 +1,22 @@
+"""
+A simple script to download images from Reddit
+for use as wallpapers.
+
+Run this as a cron job to pull new images over time - this script caches images
+that have been downloaded so only new images will be grabbed.
+
+Pair this with tmpwatch to delete old images and you always have fresh
+backgrounds.
+
+Note: It currently is Mac only.
+"""
+import logging
 import os
-import praw
-import sys
 import pickle
+import praw
 import pwd
 import requests
-import logging
+import sys
 
 from urllib.parse import urlparse
 
@@ -16,20 +28,17 @@ config['REDDITPAPER_SECRET'] = os.environ.get("REDDITPAPER_SECRET")
 config['REDDIT_USER'] = os.environ.get("REDDIT_USER")
 config['REDDIT_PASS'] = os.environ.get("REDDIT_PASS")
 config['REDDITPAPER_SUB'] = os.environ.get("REDDITPAPER_SUB", "wallpapers")
-
-for item in config:
-    if config[item] is None:
-        print(f"ERROR: {item} is not set. Please set this env variable and retry.")
-        sys.exit(1)
-
+config['REDDITPAPER_MAXSAVE'] = int(os.environ.get("REDDITPAPER_MAXSAVE", "5"))
 
 def wallpaper_directory():
+    """Return the wallpaper directory to save to."""
     username = pwd.getpwuid(os.getuid()).pw_name
     directory = "/Users/" + username + "/Pictures/Wallpapers/"
     return directory
 
 
 def load_scraped():
+    """Pull the cache of already downloaded images."""
     try:
         with open('scraped_files', 'rb') as fp:
             itemlist = pickle.load(fp)
@@ -47,11 +56,18 @@ def save_image(url, filename):
     logging.info(f"Saving image {filename} from url {url}")
     r = requests.get(url, allow_redirects=True)
     file = wallpaper_directory() + filename
-    print(f"Saving: {file}")
+    logging.info(f"Saving: {file}")
     open(file, 'wb').write(r.content)
 
 
 if __name__ == "__main__":
+
+    # Simple sanity check for config values.
+    for item in config:
+        if config[item] is None:
+            logging.error(f"ERROR: {item} is not set. Please set this env variable and retry.")
+            sys.exit(1)
+
     reddit = praw.Reddit(client_id=config['REDDITPAPER_ID'],
                          client_secret=config['REDDITPAPER_SECRET'],
                          user_agent=config['REDDITPAPER_NAME'],
